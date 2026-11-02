@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050b14">
+<title>JARVIS AI</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#050b14; --panel:#0a1a2c; --panel2:#07121f; --line:#15304a;
+  --accent:#00b4ff; --accent2:#7fdcff; --text:#cfeaff; --dim:#7d9bb5;
+}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#0a2038,#050b14 60%);
+  color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent}
+nav{position:sticky;top:0;z-index:10;display:flex;gap:6px;overflow-x:auto;padding:10px 10px 10px;
+  padding-top:calc(10px + env(safe-area-inset-top));background:rgba(5,11,20,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:transparent;color:var(--dim);border:1px solid var(--line);
+  padding:8px 14px;border-radius:999px;font-size:14px;cursor:pointer;transition:.15s}
+nav button.on{background:var(--accent);color:#00131f;border-color:var(--accent);font-weight:600}
+section{display:none;padding:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  max-width:860px;margin:0 auto}
+section.on{display:block}
+h3{margin:4px 0 12px;font-weight:600;letter-spacing:.2px}
+input,textarea,select{width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);
+  padding:11px 12px;border-radius:10px;margin:5px 0;font-size:15px;font-family:inherit}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical}
+.btn{display:inline-block;background:var(--panel);color:var(--accent);border:1px solid var(--accent);
+  padding:10px 14px;border-radius:10px;font-size:14px;cursor:pointer;text-decoration:none;
+  margin:3px 4px 3px 0;font-family:inherit}
+.btn:active{transform:scale(.98)}
+.btn.solid{background:var(--accent);color:#00131f;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 140px}
+#orb{width:120px;height:120px;border-radius:50%;margin:6px auto 14px;
+  background:radial-gradient(circle at 35% 30%,#bff0ff,#00b4ff 45%,#012033 100%);
+  box-shadow:0 0 46px rgba(0,180,255,.55);transition:transform .12s ease}
+#orb.listen{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+#log{height:46vh;min-height:220px;overflow:auto;background:var(--panel2);border:1px solid var(--line);
+  border-radius:14px;padding:12px;margin:10px 0;font-size:15px;line-height:1.45}
+.msg{margin:8px 0;padding:10px 12px;border-radius:12px;max-width:92%;white-space:pre-wrap;word-break:break-word}
+.msg.u{background:#0e2740;margin-left:auto;border:1px solid #1b3d5c}
+.msg.a{background:#08192a;border:1px solid var(--line)}
+.msg .who{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.msg.u .who{color:#6fc3ff}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);
+  padding:10px;border-radius:10px;font-size:13px;max-height:50vh;overflow:auto}
+.hint{color:var(--dim);font-size:13px;line-height:1.5}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.pill.ok{color:#39e08a;border-color:#1c5c3f}
+.pill.bad{color:#ff7b7b;border-color:#5c1c1c}
+img.shot{max-width:100%;border-radius:10px;margin-top:8px;border:1px solid var(--line)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+
+<section id="assistant">
+  <div id="orb"></div>
+  <div id="log"></div>
+  <input id="txt" placeholder="Kuch bhi likho ya bolo — &quot;YouTube pe Arijit Singh chalao&quot;">
+  <div class="row">
+    <button class="btn solid" onclick="send()">Bhejo</button>
+    <button class="btn" id="mic" onclick="toggleMic()">🎙 Mic</button>
+    <button class="btn" onclick="speechSynthesis.cancel()">🔇 Chup</button>
+  </div>
+  <p class="hint">Voice ke liye Chrome/Edge best hai. Bolne se pehle "Hey Jarvis" kehna zaroori nahi — mic chalu ho to seedha bol bhi sakte ho.</p>
+</section>
+
+<section id="browser">
+  <h3>Browser control</h3>
+  <input id="url" placeholder="URL (jaise google.com)">
+  <button class="btn" onclick="t('open',{url:$('url').value})">Kholo</button>
+  <input id="gq" placeholder="Google search">
+  <button class="btn" onclick="t('search',{q:$('gq').value})">Search</button>
+  <div class="row">
+    <input id="ct" placeholder="Click karne wala text">
+    <input id="cl" placeholder="Form label">
+    <input id="cv" placeholder="Value">
+  </div>
+  <button class="btn" onclick="t('click',{text:$('ct').value})">Click</button>
+  <button class="btn" onclick="t('type',{label:$('cl').value,value:$('cv').value})">Type</button>
+  <button class="btn" onclick="t('scroll',{amount:800})">Scroll</button>
+  <button class="btn" onclick="t('read',{})">Page padho</button>
+  <button class="btn" onclick="t('screenshot',{})">Screenshot</button>
+  <button class="btn" onclick="t('new_tab',{})">Naya tab</button>
+  <pre id="bout">—</pre>
+</section>
+
+<section id="youtube">
+  <h3>YouTube</h3>
+  <input id="yq" placeholder="Gaana ya video ka naam">
+  <button class="btn" onclick="t('yt_search',{q:$('yq').value})">Chalao</button>
+  <button class="btn" onclick="t('yt_channel',{q:$('yq').value})">Channel kholo</button>
+  <div id="ybtn" style="margin:8px 0"></div>
+  <pre id="yout">—</pre>
+</section>
+
+<section id="code">
+  <h3>Code sandbox</h3>
+  <select id="lang"><option value="python">Python</option><option value="javascript">JavaScript</option></select>
+  <textarea id="src" rows="9" placeholder="print('hello')"></textarea>
+  <button class="btn solid" onclick="t('run_code',{lang:$('lang').value,code:$('src').value})">Chalao (10s limit)</button>
+  <pre id="cout">—</pre>
+</section>
+
+<section id="zip">
+  <h3>Project builder</h3>
+  <input id="zn" placeholder="Project ka naam">
+  <textarea id="zp" rows="4" placeholder="Kya banana hai? (AI saari files bana dega)"></textarea>
+  <button class="btn solid" onclick="zgen()">ZIP banao</button>
+  <div id="zout"></div>
+  <h4>Mere ZIPs</h4>
+  <div id="zl" class="row"></div>
+</section>
+
+<section id="history">
+  <h3>Purani baatein</h3>
+  <button class="btn" onclick="clearHist()">History saaf karo</button>
+  <pre id="hout">—</pre>
+</section>
+
+<section id="settings">
+  <h3>Settings</h3>
+  <div class="card">
+    <div>Server: <span class="pill" id="srv"></span></div>
+    <div style="margin-top:8px">AI: <span class="pill" id="llm"></span></div>
+  </div>
+  <input id="tok" type="password" placeholder="JARVIS_TOKEN (.env se)">
+  <button class="btn solid" onclick="saveTok()">Save karo</button>
+  <button class="btn" onclick="testConn()">Connection test</button>
+  <pre id="sout">—</pre>
+  <p class="hint">AI ki API key server ke <code>.env</code> me rehti hai — browser/phone me kabhi nahi. Token sirf aapke device me save hota hai.</p>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const TOK = () => localStorage.jarvisTok || "";
+
+/* ---------- tabs ---------- */
+const TABS = [
+  ["assistant","Assistant"],["browser","Browser"],["youtube","YouTube"],
+  ["code","Code"],["zip","Projects"],["history","History"],["settings","Settings"]
+];
+TABS.forEach(([id,label]) => {
+  const b = document.createElement("button");
+  b.textContent = label; b.id = "b" + id;
+  b.onclick = () => show(id);
+  $("nav").append(b);
+});
+function show(id){
+  TABS.forEach(([x]) => {
+    $(x).classList.toggle("on", x === id);
+    $("b" + x).classList.toggle("on", x === id);
+  });
+  if (id === "history") loadHist();
+  if (id === "zip") zlist();
+  if (id === "settings") loadStatus();
+}
+show("assistant");
+
+/* ---------- api ---------- */
+async function api(path, body){
+  const r = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: {"Content-Type":"application/json", "X-Token": TOK()},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+/* ---------- generic tool run ---------- */
+async function t(tool, args, confirmed){
+  const target = tool === "run_code" ? $("cout") : tool.startsWith("yt") ? $("yout") : $("bout");
+  try{
+    let r = await api("/api/tool", {tool, args, confirmed: !!confirmed});
+    if (r.confirm){
+      if (confirm("Sensitive action:\n" + JSON.stringify(r.args, null, 1) + "\n\nAllow?")) return t(tool, args, true);
+      return;
+    }
+    const val = r.output ?? (r.result && r.result.image ? "[screenshot neeche]" : (r.result ?? JSON.stringify(r)));
+    target.textContent = typeof val === "string" ? val : JSON.stringify(val, null, 2);
+    if (r.result && r.result.image){
+      const img = document.createElement("img");
+      img.className = "shot";
+      img.src = "data:image/png;base64," + r.result.image;
+      target.after(img);
+    }
+  }catch(e){ target.textContent = "Error: " + e.message; }
+}
+
+/* ---------- chat ---------- */
+function add(role, text){
+  const d = document.createElement("div");
+  d.className = "msg " + role;
+  const who = document.createElement("span");
+  who.className = "who"; who.textContent = role === "u" ? "Aap" : "Jarvis";
+  d.appendChild(who);
+  d.appendChild(document.createTextNode(text));
+  $("log").appendChild(d);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+function say(s){
+  if (!s) return;
+  const u = new SpeechSynthesisUtterance(s);
+  u.lang = /[\u0900-\u097F]/.test(s) ? "hi-IN" : "en-IN";
+  u.rate = 1.02;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+async function send(text){
+  text = (text ?? $("txt").value).trim();
+  if (!text) return;
+  $("txt").value = "";
+  add("u", text);
+  if (!TOK()){ add("a", "Pehle Settings me JARVIS_TOKEN daal ke Save karo."); return; }
+  try{
+    const r = await api("/api/chat", {text});
+    add("a", r.say || "(khaali jawab)");
+    say(r.say);
+    if (r.data && r.data.confirm && confirm("Allow: " + JSON.stringify(r.data.args) + " ?")){
+      const r2 = await api("/api/chat", {text: "", confirmed_action: r.data});
+      add("a", JSON.stringify(r2.data));
+    } else if (r.data && r.data.output) add("a", r.data.output);
+    else if (r.data && r.data.download) add("a", "ZIP ready: " + location.origin + r.data.download + "?token=" + encodeURIComponent(TOK()));
+    else if (r.data && r.data.error) add("a", "Tool error: " + r.data.error);
+  }catch(e){ add("a", "Error: " + e.message); }
+}
+$("txt").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+
+/* ---------- voice ---------- */
+let rec = null, micOn = false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function startRec(){
+  if (!SR) return;
+  try{ rec = new SR(); }catch(e){ return; }
+  rec.continuous = true; rec.interimResults = false; rec.lang = "hi-IN";
+  rec.onresult = e => {
+    const res = e.results[e.results.length - 1];
+    if (!res.isFinal) return;
+    const s = res[0].transcript.trim();
+    $("orb").style.transform = "scale(" + (1 + Math.random() * .18) + ")";
+    if (!s) return;
+    const clean = s.replace(/^(hey|hi|ok|oye|are)\s+(jarvis|jarvish)[,\s]*/i, "");
+    if (/^(hey|hi|ok|oye|are)\s+(jarvis|jarvish)/i.test(s) || micOn) send(clean || "hello");
+  };
+  rec.onerror = () => {};
+  rec.onend = () => { if (micOn) { try{ rec.start(); }catch(e){} } };
+  try{ rec.start(); }catch(e){}
+}
+function toggleMic(){
+  if (!SR){ alert("Is browser me voice support nahi hai. Chrome use karo."); return; }
+  micOn = !micOn;
+  $("mic").classList.toggle("solid", micOn);
+  $("mic").textContent = micOn ? "🎙 Mic ON" : "🎙 Mic";
+  $("orb").classList.toggle("listen", micOn);
+  if (micOn) startRec(); else if (rec) { try{ rec.stop(); }catch(e){} }
+}
+$("orb").onclick = toggleMic;
+
+/* ---------- youtube buttons ---------- */
+[["playpause","⏯"],["next","⏭"],["back","⏮"],["volup","🔊+"],["voldown","🔊-"],
+ ["mute","🔇"],["forward","+10s"],["fullscreen","⛶"]].forEach(([cmd,label]) => {
+  const b = document.createElement("button");
+  b.className = "btn"; b.textContent = label;
+  b.onclick = () => t("yt", {cmd});
+  $("ybtn").appendChild(b);
+});
+
+/* ---------- zip ---------- */
+async function zgen(){
+  $("zout").textContent = "Bana raha hoon... (thoda time lagega)";
+  try{
+    const r = await api("/api/zip/generate", {name: $("zn").value || "project", prompt: $("zp").value});
+    $("zout").innerHTML = "";
+    const a = document.createElement("a");
+    a.className = "btn solid";
+    a.href = r.download + "?token=" + encodeURIComponent(TOK());
+    a.textContent = "⬇ Download ZIP";
+    $("zout").appendChild(a);
+    const pre = document.createElement("pre");
+    pre.textContent = r.files.join("\n");
+    $("zout").appendChild(pre);
+    zlist();
+  }catch(e){ $("zout").textContent = "Error: " + e.message; }
+}
+async function zlist(){
+  try{
+    const list = await api("/api/zip/list");
+    $("zl").innerHTML = "";
+    list.forEach(n => {
+      const a = document.createElement("a");
+      a.className = "btn";
+      a.href = "/api/zip/download/" + n + "?token=" + encodeURIComponent(TOK());
+      a.textContent = n + ".zip";
+      $("zl").appendChild(a);
+    });
+  }catch(e){}
+}
+
+/* ---------- history / settings ---------- */
+async function loadHist(){
+  try{
+    const h = await api("/api/history");
+    $("hout").textContent = h.map(r => `[${r[2]}] ${r[0]}: ${r[1]}`).join("\n") || "(khaali)";
+  }catch(e){ $("hout").textContent = e.message; }
+}
+async function clearHist(){
+  try{ await api("/api/history/clear", {}); loadHist(); }catch(e){ alert(e.message); }
+}
+function saveTok(){
+  localStorage.jarvisTok = $("tok").value.trim();
+  $("sout").textContent = "Token save ho gaya.";
+  loadStatus();
+}
+async function loadStatus(){
+  $("srv").textContent = location.host || "—";
+  $("srv").className = "pill ok";
+  try{
+    const s = await api("/api/status");
+    const l = s.llm;
+    $("llm").textContent = l.provider + " · " + l.model + (l.key_configured ? "" : " · key missing");
+    $("llm").className = "pill " + (l.key_configured ? "ok" : "bad");
+  }catch(e){
+    $("llm").textContent = "token check karo";
+    $("llm").className = "pill bad";
+  }
+}
+async function testConn(){
+  $("sout").textContent = "checking...";
+  try{
+    const r = await api("/api/status");
+    $("sout").textContent = "✅ Server chalu hai\nAI: " + r.llm.provider + " / " + r.llm.model +
+      "\nKey: " + (r.llm.key_configured ? "set hai" : "missing") + "\nZIPs: " + r.zips;
+  }catch(e){ $("sout").textContent = "❌ " + e.message; }
+}
+if (TOK()) $("tok").value = TOK();
+if (TOK()) loadStatus();
+
+/* service worker: sirf shell cache, API kabhi cache nahi */
+if ("serviceWorker" in navigator && location.protocol === "https:")
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+</script>
+</body>
+</html>
